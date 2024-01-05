@@ -1,0 +1,25 @@
+---
+- name: Bootstrap development environment
+  hosts: cosmos
+  connection: local
+  tasks:
+    - name: Ensure dotfiles are present
+      stat:
+        path: "{{ DOTFILES_HOME }}"
+      register: dotfiles_home
+
+    - name: Make sure dotfiles are present
+      when: dotfiles_home.stat.exists == False
+      git:
+        repo: https://github.com/{{ GIT.USER }}/dotfiles.git
+        dest: ~/.dotfiles
+
+    - name: Allow sudo without password
+      become: yes
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        line: "{{ USERNAME }}	ALL=NOPASSWD: ALL"
+        insertafter:  '^%admin\tALL=\(ALL\) ALL'
+        validate: "visudo -cf %s"
+      when: SUDO_USE_PASSWORD

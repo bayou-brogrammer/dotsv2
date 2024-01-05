@@ -1,0 +1,14 @@
+# Dotfile specific
+DOTFILES_HOME: "{{ HOME }}/.dotfiles"
+HOME: "{{ ansible_user_dir | expanduser }}"
+
+GIT:
+  USER: lecoqjacob
+  NAME: Jacob LeCoq
+  EMAIL: lecoqjacob@gmail.com
+
+# System
+SUDO_USE_PASSWORD: true
+USERNAME: "{{ ansible_user_id }}"
+HOSTNAME: "{{ ansible_hostname }}"
+SHELL: "{{ ansible_user_shell | default('/bin/zsh') }}"

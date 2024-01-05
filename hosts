@@ -1,0 +1,5 @@
+[local]
+cosmos
+
+[local:vars]
+ansible_connection=local
