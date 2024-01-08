@@ -2,6 +2,6 @@
 collections:
   - name: community.general
 
-roles:
-  - name: geerlingguy.nodejs
+# roles:
+#   - name: geerlingguy.nodejs
   # - name: elliotweiser.osx-command-line-tools

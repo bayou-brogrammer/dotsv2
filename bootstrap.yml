@@ -3,17 +3,30 @@
   hosts: cosmos
   connection: local
   tasks:
-    - name: Ensure Nix is installed
-      ignore_errors: true
-      register: nix_installed
-      ansible.builtin.shell: nix --version
+    - name: Check if initial install
+      register: init_run
+      stat:
+        path: "{{ DOTFILES_HOME }}/.initial_run"
+    
+    - name: Set skip to true if initial run
+      set_fact:
+        skip: "{{ init_run.stat.exists }}"
 
-    - name: Install Nix
-      when: nix_installed.rc != 0
-      ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+    - name: Create initial run file
+      when: init_run.stat.exists == false
+      file:
+        state: touch
+        path: "{{ DOTFILES_HOME }}/.initial_run"
+
+    - name: Install collections and roles together
+      when: skip == false
+      community.general.ansible_galaxy_install:
+        type: both
+        requirements_file: requirements.yml
 
     - name: Install core packages using Pacman
       become: true
+      when: skip == false
       community.general.pacman:
         state: latest
         update_cache: yes
@@ -22,23 +35,19 @@
         - git
         - stow
 
-    - name: Install collections and roles together
-      community.general.ansible_galaxy_install:
-        type: both
-        requirements_file: requirements.yml
-
     - name: Ensure dotfiles are present
+      when: skip == false
+      register: dotfiles_home
       stat:
         path: "{{ DOTFILES_HOME }}"
-      register: dotfiles_home
 
     - name: Make sure dotfiles are present
-      when: dotfiles_home.stat.exists == False
+      when:  (skip == false) and (dotfiles_home.stat.exists == False)
       git:
         repo: https://github.com/{{ GIT.USER }}/dotfiles.git
         dest: ~/.dotfiles
 
-    - name: System
+    - name: Bootstrap System
       tags: system
       import_role:
         name: system

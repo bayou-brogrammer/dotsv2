@@ -2,13 +2,19 @@
 DOTFILES_HOME: "{{ HOME }}/.dotfiles"
 HOME: "{{ ansible_user_dir | expanduser }}"
 
+# Git
 GIT:
   USER: lecoqjacob
   NAME: Jacob LeCoq
   EMAIL: lecoqjacob@gmail.com
 
 # System
+OS: "{{ ansible_os_family }}"
 SUDO_USE_PASSWORD: true
 USERNAME: "{{ ansible_user_id }}"
 HOSTNAME: "{{ ansible_hostname }}"
 SHELL: "{{ ansible_user_shell | default('/bin/zsh') }}"
+
+# Playbook Specific
+ROLES_DIR: "{{ playbook_dir }}/roles"
+SYSTEM_ROLE_DIR: "{{ ROLES_DIR }}/system"

@@ -1,16 +1,20 @@
 ---
 - name: Allow sudo without password
   become: true
+  when: (skip == false) and (SUDO_USE_PASSWORD == false)
   lineinfile:
     dest: /etc/sudoers
     state: present
     validate: "visudo -cf %s"
     line: "{{ USERNAME }}	ALL=NOPASSWD: ALL"
     insertafter:  '^%admin\tALL=\(ALL\) ALL'
-  when: SUDO_USE_PASSWORD == false
 
 - name: Create directory ~/.local/bin/
+  when: skip == false
   file:
     path: "{{ ansible_env.HOME }}/.local/bin"
     state: directory
     mode: 0755
+
+- name: Run OS dependant tasks
+  ansible.builtin.include_tasks: "{{ SYSTEM_ROLE_DIR }}/tasks/{{ ansible_os_family }}.yml"

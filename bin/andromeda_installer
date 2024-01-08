@@ -1,0 +1,385 @@
+#!/bin/sh
+
+# set -e
+source /etc/os-release
+export PATH="$PATH:~/.local/bin"
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= INPUT =============================================== #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+function usage(){
+    echo "Usage: $0 [options] [command]"
+    echo
+    echo "Commands:"
+    echo "  install  Install andromeda"
+    echo
+    echo "Options:"
+    echo "  -h  Display this help message"
+    echo "  -t  Tags to run"
+    echo "  -s  Skip confirmation"
+}
+
+# Get the options
+while [[ "$#" -gt 0 ]]
+  do
+    case $1 in
+      install) INSTALL="true";;
+      -t|--tags) TAGS="true";;
+      -s|--skip) SKIP_INSTALL="true";;
+    esac
+    shift
+done
+
+if [ -z "$INSTALL" ]; then
+    usage
+    exit 0
+fi
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= ASCII =============================================== #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+ANDROMEDA=$(cat <<'EOF'
+    _              _                              _         ___           _        _ _           
+   / \   _ __   __| |_ __ ___  _ __ ___   ___  __| | __ _  |_ _|_ __  ___| |_ __ _| | | ___ _ __ 
+  / _ \ | '_ \ / _` | '__/ _ \| '_ ` _ \ / _ \/ _` |/ _` |  | || '_ \/ __| __/ _` | | |/ _ \ '__|
+ / ___ \| | | | (_| | | | (_) | | | | | |  __/ (_| | (_| |  | || | | \__ \ || (_| | | |  __/ |   
+/_/   \_\_| |_|\__,_|_|  \___/|_| |_| |_|\___|\__,_|\__,_| |___|_| |_|___/\__\__,_|_|_|\___|_|   
+EOF
+)
+
+REQUIREMENTS=$(cat <<'EOF'
+ ____  _____ ___  _   _ ___ ____  _____ __  __ _____ _   _ _____ ____  
+|  _ \| ____/ _ \| | | |_ _|  _ \| ____|  \/  | ____| \ | |_   _/ ___| 
+| |_) |  _|| | | | | | || || |_) |  _| | |\/| |  _| |  \| | | | \___ \ 
+|  _ <| |__| |_| | |_| || ||  _ <| |___| |  | | |___| |\  | | |  ___) |
+|_| \_\_____\__\_\\___/|___|_| \_\_____|_|  |_|_____|_| \_| |_| |____/ 
+EOF
+)
+
+NIX=$(cat <<'EOF'
+ _   _ _____  __  ___ _   _ ____ _____  _    _     _     _____ ____  
+| \ | |_ _\ \/ / |_ _| \ | / ___|_   _|/ \  | |   | |   | ____|  _ \ 
+|  \| || | \  /   | ||  \| \___ \ | | / _ \ | |   | |   |  _| | |_) |
+| |\  || | /  \   | || |\  |___) || |/ ___ \| |___| |___| |___|  _ < 
+|_| \_|___/_/\_\ |___|_| \_|____/ |_/_/   \_\_____|_____|_____|_| \_\
+EOF
+)
+
+ANSIBLE=$(cat <<'EOF'
+    _    _   _ ____ ___ ____  _     _____   ___ _   _ ____ _____  _    _     _     _____ ____  
+   / \  | \ | / ___|_ _| __ )| |   | ____| |_ _| \ | / ___|_   _|/ \  | |   | |   | ____|  _ \ 
+  / _ \ |  \| \___ \| ||  _ \| |   |  _|    | ||  \| \___ \ | | / _ \ | |   | |   |  _| | |_) |
+ / ___ \| |\  |___) | || |_) | |___| |___   | || |\  |___) || |/ ___ \| |___| |___| |___|  _ < 
+/_/   \_\_| \_|____/___|____/|_____|_____| |___|_| \_|____/ |_/_/   \_\_____|_____|_____|_| \_\
+EOF
+)
+
+GALAXY=$(cat <<'EOF'
+    _    _   _ ____ ___ ____  _     _____    ____    _    _        _    __  ____   __
+   / \  | \ | / ___|_ _| __ )| |   | ____|  / ___|  / \  | |      / \   \ \/ /\ \ / /
+  / _ \ |  \| \___ \| ||  _ \| |   |  _|   | |  _  / _ \ | |     / _ \   \  /  \ V / 
+ / ___ \| |\  |___) | || |_) | |___| |___  | |_| |/ ___ \| |___ / ___ \  /  \   | |  
+/_/   \_\_| \_|____/___|____/|_____|_____|  \____/_/   \_\_____/_/   \_\/_/\_\  |_|  
+EOF
+)
+
+PLAYBOOK=$(cat <<'EOF'
+    _    _   _ ____ ___ ____  _     _____   ____  _        _ __   ______   ___   ___  _  __
+   / \  | \ | / ___|_ _| __ )| |   | ____| |  _ \| |      / \\ \ / / __ ) / _ \ / _ \| |/ /
+  / _ \ |  \| \___ \| ||  _ \| |   |  _|   | |_) | |     / _ \\ V /|  _ \| | | | | | | ' / 
+ / ___ \| |\  |___) | || |_) | |___| |___  |  __/| |___ / ___ \| | | |_) | |_| | |_| | . \ 
+/_/   \_\_| \_|____/___|____/|_____|_____| |_|   |_____/_/   \_\_| |____/ \___/ \___/|_|\_\
+EOF
+)
+
+BOOTSTRAP=$(cat <<'EOF'
+ ____   ___   ___ _____ ____ _____ ____      _    ____  ____ ___ _   _  ____ 
+| __ ) / _ \ / _ \_   _/ ___|_   _|  _ \    / \  |  _ \|  _ \_ _| \ | |/ ___|
+|  _ \| | | | | | || | \___ \ | | | |_) |  / _ \ | |_) | |_) | ||  \| | |  _ 
+| |_) | |_| | |_| || |  ___) || | |  _ <  / ___ \|  __/|  __/| || |\  | |_| |
+|____/ \___/ \___/ |_| |____/ |_| |_| \_\/_/   \_\_|   |_|  |___|_| \_|\____|
+EOF
+)
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= VARS =============================================== #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+PKG_MANAGER=
+INSTALL_CMD=
+RUN_INSTALLER=
+
+TAGS=("all")
+PLAYBOOKS=("local")
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ================================== Gather OS / Package Manager Info ========================= #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+declare -A OSINFO;
+OSINFO[/etc/SuSE-release]=zypp
+OSINFO[/etc/redhat-release]=yum
+OSINFO[/etc/alpine-release]=apk
+OSINFO[/etc/arch-release]=pacman
+OSINFO[/etc/gentoo-release]=emerge
+OSINFO[/etc/debian_version]=apt-get
+
+declare -A PKGMANAGER;
+PKGMANAGER[yum]=yum
+PKGMANAGER[apk]=apk
+PKGMANAGER[brew]=brew
+PKGMANAGER[zypp]=zypp
+PKGMANAGER[pacman]=pacman
+PKGMANAGER[emerge]=emerge
+PKGMANAGER[apt-get]=apt-get
+
+declare -A INSTALLCMD;
+INSTALLCMD[brew]="brew install -y"
+INSTALLCMD[emerge]="sudo emerge -a"
+INSTALLCMD[yum]="sudo yum install -y"
+INSTALLCMD[apk]="sudo apk add --no-cache"
+INSTALLCMD[zypp]="sudo zypper install -y"
+INSTALLCMD[apt-get]="sudo apt-get install -y"
+INSTALLCMD[pacman]="sudo pacman -S --noconfirm"
+
+# Assign package manager and install command
+for f in ${!OSINFO[@]}
+do
+    if [[ -f $f ]];then
+        PKG_MANAGER=${PKGMANAGER[${OSINFO[$f]}]}
+        break
+    fi
+done
+
+INSTALL_CMD=${INSTALLCMD[$PKG_MANAGER]}
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= BASH HELPERS ===========================================#
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+function quit() {
+    echo "Exiting..."
+    exit 0
+}
+
+function repeat(){
+	for i in $(seq 1 $2); do echo -n "$1"; done
+}
+
+function tabecho {
+    echo ">>> $1"
+}
+
+function double_tabecho {
+    tabecho "$1"
+    echo
+}
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= HELPERS =============================================== #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+function section_start() {
+    echo "$1"
+    line c=$2
+}
+
+function section_end() {
+    echo "$1"
+    sleep 0.5
+}
+
+function title(){
+    echo
+    line c=$2
+    echo "$1"
+    line c=$2
+}
+
+
+function line(){
+    local "${@}"
+
+    char=${ch:-"="}
+    count=${c:-100}
+    double_echo=${d:-"false"}
+    repeat "$char" $count
+    echo
+
+    if [ $double_echo == "true" ]; then
+        echo
+    fi
+}
+
+function confirm() {
+    msg=${1:-"Do you wish to continue? (Y/n)"}
+    with_echo=${2:-"true"}
+
+    if ! command -v gum &> /dev/null
+    then
+        gum confirm "$msg" --default=true --affirmative "Yes" --negative "No"
+        if [ $with_echo == "true" ]; then
+            echo
+        fi
+    else
+        read -p "$msg " choice
+        if [ $with_echo == "true" ]; then
+            echo
+        fi
+
+        case $choice in  
+        y|Y|"") return 0 ;; 
+        *) return 1 ;; 
+        esac
+    fi
+
+}
+
+function run_gum() {
+    gum spin --show-output --title.bold --spinner line --title ">>> $1" -- $2
+}
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+# ======================================= PACKAGES =============================================== #
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+function check_requirment(){
+    if ! command -v $1 &> /dev/null
+    then 
+        return 1
+    else
+        return 0
+    fi
+}
+
+function check_requirments(){
+    pkgs=("$@")
+    for pkg in "${pkgs[@]}"; do
+        check_requirment $pkg
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+    done
+}
+
+# $1 = package name
+# $2 = install command
+function install_pkg() {
+    check_requirment $1
+
+    # Already installed
+    if [ $? == 0 ]; then
+        tabecho "[ $1 ] is already installed."
+        return 0
+    fi
+
+    pkg_to_install=${2:-$1}
+    cmd_to_run="$INSTALL_CMD $pkg_to_install"
+    tabecho "[ $1 ] is not installed. Installing..."
+    $cmd_to_run > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        tabecho "Failed to install [ $1 ]"
+        return 1
+    fi
+}
+
+function installpkgs(){
+    pkgs=${pkgs-"true"}
+    for pkg in "${pkgs[@]}"; do
+        install_pkg $pkg
+    done
+}
+
+# =============================================================================================== #
+# ======================================= INSATALLER ============================================ #
+# =============================================================================================== #
+
+# Clear this bitch
+clear
+title "$ANDROMEDA"
+
+############################
+## REQUIREMENTS
+############################
+
+pkgs=("gum" "fastfetch")
+check_requirments "${pkgs[@]}"
+if [ $? == 1 ]; then
+    installpkgs pkgs="${pkgs[@]}"
+    section_end
+fi
+
+fastfetch
+
+############################
+## Main Section
+############################
+
+echo
+cat << 'EOF'
+This script performs the following actions:
+-> Installs required packages [gum fastfetch nix ansible]
+-> Installs ansible-galaxy and ansible-galaxy packages
+-> Runs ansible playbook
+EOF
+echo
+
+if [ -n "$SKIP_INSTALL" ]; then
+gum log --structured --level debug "Creating file..." name file.txt
+    run_gum "Bootstrapping ansible..." "ansible-playbook -i hosts bootstrap.yml --tags $TAGS"
+    quit
+fi
+
+confirm "Run installer? (Y/n)"
+if [ $? -ne 0 ]; then
+   quit
+fi
+
+
+
+# ------------------------------------------------------------
+# -- Nix Installer -------------------------------------------
+# ------------------------------------------------------------
+function install_nix(){
+    msg="[ nix ] is not installed. Downloading and installing..."
+    double_tabecho "$msg"
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+    sleep 0.3
+}
+
+section_start "$NIX"
+check_requirment "nix"
+if [ $? -ne 0 ]; then
+    install_nix
+else
+    tabecho "[ nix ] is already installed."
+fi
+section_end
+
+# ----------------------------------------------------------------
+# -- Ansible Installer -------------------------------------------
+# ----------------------------------------------------------------
+
+section_start "$ANSIBLE"
+
+# -- Ansible -------------------------------------------
+title "Install Ansible" 20
+install_pkg "ansible" "ansible-core"
+
+# -- Ansible Galaxy ------------------------------------
+title "Ansible Galaxy" 20
+gum spin --spinner meter --title ">>> Installing ansible-galaxy requirements..." -- ansible-galaxy collection install -if -r requirements.yml
+tabecho "Installed ansible-galaxy requirements"
+
+# -- Ansible Playbook ----------------------------------
+title "Ansible Playbook" 20
+header="Select a playbook to run"
+PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${PLAYBOOKS[@]}"))
+tabecho "$header: $PLAYBOOK"
+
+header="Select a tag to run"
+TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${TAGS[@]}"))
+double_tabecho "$header: $TAGS"
+
+ansible-playbook -i hosts bootstrap.yml --tags $TAGS
+# # ansible-playbook -i hosts bootstrap.yml --ask-become-pass --tags $tags
