@@ -1,5 +1,16 @@
-- name: Install zsh
-  apt: name=zsh state=present
-  become: yes
-  become_user: root
-  become_method: sudo
+---
+- name: Allow sudo without password
+  become: true
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    validate: "visudo -cf %s"
+    line: "{{ USERNAME }}	ALL=NOPASSWD: ALL"
+    insertafter:  '^%admin\tALL=\(ALL\) ALL'
+  when: SUDO_USE_PASSWORD == false
+
+- name: Create directory ~/.local/bin/
+  file:
+    path: "{{ ansible_env.HOME }}/.local/bin"
+    state: directory
+    mode: 0755

@@ -3,6 +3,30 @@
   hosts: cosmos
   connection: local
   tasks:
+    - name: Ensure Nix is installed
+      ignore_errors: true
+      register: nix_installed
+      ansible.builtin.shell: nix --version
+
+    - name: Install Nix
+      when: nix_installed.rc != 0
+      ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+
+    - name: Install core packages using Pacman
+      become: true
+      community.general.pacman:
+        state: latest
+        update_cache: yes
+        name: "{{ item }}"
+      loop:
+        - git
+        - stow
+
+    - name: Install collections and roles together
+      community.general.ansible_galaxy_install:
+        type: both
+        requirements_file: requirements.yml
+
     - name: Ensure dotfiles are present
       stat:
         path: "{{ DOTFILES_HOME }}"
@@ -14,12 +38,7 @@
         repo: https://github.com/{{ GIT.USER }}/dotfiles.git
         dest: ~/.dotfiles
 
-    - name: Allow sudo without password
-      become: yes
-      lineinfile:
-        dest: /etc/sudoers
-        state: present
-        line: "{{ USERNAME }}	ALL=NOPASSWD: ALL"
-        insertafter:  '^%admin\tALL=\(ALL\) ALL'
-        validate: "visudo -cf %s"
-      when: SUDO_USE_PASSWORD
+    - name: System
+      tags: system
+      import_role:
+        name: system
