@@ -2,50 +2,34 @@
 - name: Bootstrap development environment
   hosts: cosmos
   connection: local
-  tasks:
-    - name: Check if initial install
-      register: init_run
-      stat:
-        path: "{{ DOTFILES_HOME }}/.initial_run"
     
-    - name: Set skip to true if initial run
-      set_fact:
-        skip: "{{ init_run.stat.exists }}"
+  vars:
+    ansible_password: '{{ lookup("env", "ANSIBLE_PASSWORD") }}'
 
-    - name: Create initial run file
-      when: init_run.stat.exists == false
-      file:
-        state: touch
-        path: "{{ DOTFILES_HOME }}/.initial_run"
+  tasks:
+    - name: Prompt SSH password if necessary
+      when: ansible_password is undefined
+      block:
+        - name: Conditionally prompt for ssh/sudo password
+          no_log: true
+          register: password_prompt
+          ansible.builtin.pause:
+            prompt: "Password for {{ ansible_user_id }}@{{ ansible_host }}"
+            echo: false
 
-    - name: Install collections and roles together
-      when: skip == false
-      community.general.ansible_galaxy_install:
-        type: both
-        requirements_file: requirements.yml
+        - name: Set ansible_password
+          no_log: true
+          ansible.builtin.set_fact:
+            ansible_password: "{{ password_prompt.user_input }}"
 
-    - name: Install core packages using Pacman
-      become: true
-      when: skip == false
-      community.general.pacman:
-        state: latest
-        update_cache: yes
-        name: "{{ item }}"
-      loop:
-        - git
-        - stow
+    - name: Set ansible_become_password
+      no_log: true
+      when: ansible_become_password is undefined
+      ansible.builtin.set_fact:
+        ansible_become_password: "{{ ansible_password }}"
 
-    - name: Ensure dotfiles are present
-      when: skip == false
-      register: dotfiles_home
-      stat:
-        path: "{{ DOTFILES_HOME }}"
-
-    - name: Make sure dotfiles are present
-      when:  (skip == false) and (dotfiles_home.stat.exists == False)
-      git:
-        repo: https://github.com/{{ GIT.USER }}/dotfiles.git
-        dest: ~/.dotfiles
+    - ansible.builtin.import_tasks:
+        file: tasks/bootstrap.yml
 
     - name: Bootstrap System
       tags: system

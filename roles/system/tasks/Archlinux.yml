@@ -1,3 +1,6 @@
-- name: Get uptime information
-  ansible.builtin.shell: /usr/bin/uptime
-  register: result
+- name: Update/Upgrade pacman
+  become: true
+  when: skip == false
+  pacman:
+    upgrade: true
+    update_cache: true

@@ -75,6 +75,14 @@ export PATH="$PATH:~/.local/bin"
 # ======================================= VARS =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
+BOLD=$(tput bold)
+NORMAL=$(tput sgr0)
+
+NC='\033[0m' # No Color
+WHITE='\033[0;37m' # WHITE
+
+
+
 PKG_MANAGER=
 INSTALL_CMD=
 RUN_INSTALLER=
@@ -115,11 +123,6 @@ done
 if [ -z "$INSTALL" ]; then
     usage
     exit 0
-fi
-
-if [ ! -d "$DOTFILE_HOME" ]; then
-  echo "Cloning dotfiles into $DOTFILE_HOME..."
-  git clone $GITHUB_URL "$DOTFILE_HOME" --depth 1
 fi
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
@@ -168,21 +171,12 @@ INSTALL_CMD=${INSTALLCMD[$PKG_MANAGER]}
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
 function quit() {
-    echo "Exiting..."
+    gecho "Exiting..."
     exit 0
 }
 
 function repeat(){
 	for i in $(seq 1 $2); do echo -n "$1"; done
-}
-
-function tabecho {
-    echo ">>> $1"
-}
-
-function double_tabecho {
-    tabecho "$1"
-    echo
 }
 
 function dir_exist(){
@@ -196,6 +190,21 @@ function dir_exist(){
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 # ======================================= HELPERS =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
+
+function gecho(){
+    # check if gum exist and if so use gum to log message, otherwise echo
+    if ! command -v gum &> /dev/null
+    then
+        echo -e "\033[1mDEBUG\033[0m $1"
+    else
+        gum log -fl debug --level.foreground="#FF" "$@"
+    fi
+}
+
+function double_gecho {
+    gecho "$1"
+    echo
+}
 
 function section_start() {
     echo "$1"
@@ -253,8 +262,26 @@ function confirm() {
 
 }
 
+function ensure_repo(){
+    if [ ! -d "$DOTFILE_HOME" ]; then
+        gecho "Cloning dotfiles into $DOTFILE_HOME..."
+        git clone $GITHUB_URL "$DOTFILE_HOME" --depth 1
+    fi
+}
+
 function run_gum() {
-    gum spin --show-output --title.bold --spinner line --title ">>> $1" -- $2
+    showoutput=${3:-"false"}
+    cmd="gum spin --title.bold --spinner dot --title '$1'"
+
+    if [ $showoutput == "true" ]; then
+        cmd="$cmd --show-output"
+    fi
+
+    eval "$cmd -- $2"
+}
+
+function run_playbook(){
+    run_gum "Running playbook [ $PLAYBOOK ] with tags: [ $TAGS ]" "ansible-playbook -i $DOTFILE_HOME/hosts $DOTFILE_HOME/bootstrap.yml --tags $TAGS" "true"
 }
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
@@ -287,16 +314,16 @@ function install_pkg() {
 
     # Already installed
     if [ $? == 0 ]; then
-        tabecho "[ $1 ] is already installed."
+        gecho "[ $1 ] is already installed."
         return 0
     fi
 
     pkg_to_install=${2:-$1}
     cmd_to_run="$INSTALL_CMD $pkg_to_install"
-    tabecho "[ $1 ] is not installed. Installing..."
+    gecho "[ $1 ] is not installed. Installing..."
     $cmd_to_run > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-        tabecho "Failed to install [ $1 ]"
+        gecho "Failed to install [ $1 ]"
         return 1
     fi
 }
@@ -320,82 +347,21 @@ title "$ANDROMEDA"
 ## REQUIREMENTS
 ############################
 
-pkgs=("gum" "fastfetch")
-check_requirments "${pkgs[@]}"
-if [ $? == 1 ]; then
-    installpkgs pkgs="${pkgs[@]}"
-    section_end
-fi
-
-fastfetch
-
-############################
-## Main Section
-############################
-
-echo
-cat << 'EOF'
-This script performs the following actions:
--> Installs required packages [gum fastfetch nix ansible]
--> Installs ansible-galaxy and ansible-galaxy packages
--> Runs ansible playbook
-EOF
-echo
-
-if [ -n "$SKIP_INSTALL" ]; then
-gum log --structured --level debug "Creating file..." name file.txt
-    run_gum "Bootstrapping ansible..." "ansible-playbook -i hosts bootstrap.yml --tags $TAGS"
-    quit
-fi
-
-confirm "Run installer? (Y/n)"
-if [ $? -ne 0 ]; then
-   quit
-fi
-
-# ------------------------------------------------------------
-# -- Nix Installer -------------------------------------------
-# ------------------------------------------------------------
-function install_nix(){
-    msg="[ nix ] is not installed. Downloading and installing..."
-    double_tabecho "$msg"
-    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
-    sleep 0.3
-}
-
-section_start "$NIX"
-dir_exist "/nix"
-if [ $? -ne 0 ]; then
-    install_nix
-else
-    tabecho "[ nix ] is already installed."
-fi
-section_end
-
-# ----------------------------------------------------------------
-# -- Ansible Installer -------------------------------------------
-# ----------------------------------------------------------------
-
-section_start "$ANSIBLE"
-
-# -- Ansible -------------------------------------------
-title "Install Ansible" 20
-install_pkg "ansible" "ansible-core"
-
+# 4
 # -- Ansible Galaxy ------------------------------------
 title "Ansible Galaxy" 20
-gum spin --spinner meter --title ">>> Installing ansible-galaxy requirements..." -- ansible-galaxy collection install -if -r requirements.yml
-tabecho "Installed ansible-galaxy requirements"
+run_gum "Installing ansible-galaxy requirements..." "ansible-galaxy collection install -if -r requirements.yml"
+gecho "Installed ansible-galaxy requirements"
 
 # -- Ansible Playbook ----------------------------------
 title "Ansible Playbook" 20
 header="Select a playbook to run"
 PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${PLAYBOOKS[@]}"))
-tabecho "$header: $PLAYBOOK"
+gecho "$header: $PLAYBOOK"
 
 header="Select a tag to run"
 TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${TAGS[@]}"))
-double_tabecho "$header: $TAGS"
+double_gecho "$header: $TAGS"
 
 # LIFT OFF
-ansible-playbook -i "$DOTFILE_HOME/hosts" "$DOTFILE_HOME/bootstrap.yml" --tags $TAGS
+run_playbook
