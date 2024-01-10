@@ -49,7 +49,7 @@ GALAXY=$(cat <<'EOF'
 EOF
 )
 
-PLAYBOOK=$(cat <<'EOF'
+ANSIBLEPLAYBOOK=$(cat <<'EOF'
     _    _   _ ____ ___ ____  _     _____   ____  _        _ __   ______   ___   ___  _  __
    / \  | \ | / ___|_ _| __ )| |   | ____| |  _ \| |      / \\ \ / / __ ) / _ \ / _ \| |/ /
   / _ \ |  \| \___ \| ||  _ \| |   |  _|   | |_) | |     / _ \\ V /|  _ \| | | | | | | ' /
@@ -278,6 +278,7 @@ function run_gum() {
     fi
 
     eval "$cmd -- $2"
+    echo
 }
 
 function run_playbook(){
@@ -343,25 +344,82 @@ function installpkgs(){
 clear
 title "$ANDROMEDA"
 
+pkgs=("gum" "fastfetch")
+check_requirments "${pkgs[@]}"
+if [ $? == 1 ]; then
+    installpkgs pkgs="${pkgs[@]}"
+    section_end
+fi
+
+fastfetch
+
 ############################
-## REQUIREMENTS
+## Main Section
 ############################
 
-# 4
+echo
+cat << 'EOF'
+This script performs the following actions:
+-> Installs required packages [gum fastfetch nix ansible]
+-> Installs ansible-galaxy and ansible-galaxy packages
+-> Runs ansible playbook
+EOF
+echo
+
+if [ -n "$SKIP_INSTALL" ]; then
+gum log --structured --level debug "Creating file..." name file.txt
+    run_gum "Bootstrapping ansible..." "ansible-playbook -i hosts bootstrap.yml --tags $TAGS"
+    quit
+fi
+
+confirm "Run installer? (Y/n)"
+if [ $? -ne 0 ]; then
+   quit
+fi
+
+# ------------------------------------------------------------
+# -- Nix Installer -------------------------------------------
+# ------------------------------------------------------------
+function install_nix(){
+    msg="[ nix ] is not installed. Downloading and installing..."
+    double_gecho "$msg"
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+    sleep 0.3
+}
+
+section_start "$NIX"
+dir_exist "/nix"
+if [ $? -ne 0 ]; then
+    install_nix
+else
+    gecho "[ nix ] is already installed."
+fi
+section_end
+
+# ----------------------------------------------------------------
+# -- Ansible Installer -------------------------------------------
+# ----------------------------------------------------------------
+
+section_start "$ANSIBLE"
+install_pkg "ansible" "ansible-core"
+section_end
+
 # -- Ansible Galaxy ------------------------------------
-title "Ansible Galaxy" 20
-run_gum "Installing ansible-galaxy requirements..." "ansible-galaxy collection install -if -r requirements.yml"
+section_start "$GALAXY"
+run_gum "Installing ansible-galaxy requirements..." "ansible-galaxy collection install -if -r requirements.yml" true
 gecho "Installed ansible-galaxy requirements"
+section_end
 
 # -- Ansible Playbook ----------------------------------
-title "Ansible Playbook" 20
+section_start "$ANSIBLEPLAYBOOK"
 header="Select a playbook to run"
 PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${PLAYBOOKS[@]}"))
 gecho "$header: $PLAYBOOK"
 
 header="Select a tag to run"
 TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${TAGS[@]}"))
-double_gecho "$header: $TAGS"
+gecho "$header: $TAGS"
+section_end
 
 # LIFT OFF
 run_playbook
