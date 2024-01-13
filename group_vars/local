@@ -18,3 +18,4 @@ SHELL: "{{ ansible_user_shell | default('/bin/zsh') }}"
 # Playbook Specific
 ROLES_DIR: "{{ playbook_dir }}/roles"
 SYSTEM_ROLE_DIR: "{{ ROLES_DIR }}/system"
+DESKTOP_ROLE_DIR: "{{ ROLES_DIR }}/desktop"

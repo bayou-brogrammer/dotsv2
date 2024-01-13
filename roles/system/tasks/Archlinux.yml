@@ -1,6 +1,29 @@
-- name: Update/Upgrade pacman
+---
+- name: Archlinux | Update/Upgrade pacman
   become: true
-  when: skip == false
-  pacman:
+  when: update_system
+  community.general.pacman:
     upgrade: true
     update_cache: true
+
+- name: Archlinux | Upgrade the system using paru
+  become: true
+  when: update_system
+  kewlfft.aur.aur:
+    use: paru
+    upgrade: true
+    aur_only: true
+
+- name: Archlinux | Install pacman packages
+  become: true
+  loop: "{{ system_packages.pacman }}"
+  when: (not skip_setup) and (item not in ansible_facts.packages)
+  ansible.builtin.package:
+    state: latest
+    name: "{{ item }}"
+
+- name: Archlinux | Install AUR packages
+  become: true
+  kewlfft.aur.aur:
+    state: latest
+    name: "{{ system_packages.aur }}"

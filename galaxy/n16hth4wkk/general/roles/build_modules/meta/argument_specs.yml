@@ -1,0 +1,15 @@
+---
+argument_specs:
+  main:
+    description: Build and link a go executable module.
+
+    options:
+      module_name:
+        type: str
+        required: true
+        description: Name of the module to build.
+
+      module_path:
+        type: str
+        required: true
+        description: Path to the module to build.

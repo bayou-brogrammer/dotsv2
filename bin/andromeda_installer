@@ -4,15 +4,6 @@
 # ======================================= ASCII =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-ANDROMEDA=$(cat <<'EOF'
-    _              _                              _         ___           _        _ _
-   / \   _ __   __| |_ __ ___  _ __ ___   ___  __| | __ _  |_ _|_ __  ___| |_ __ _| | | ___ _ __
-  / _ \ | '_ \ / _` | '__/ _ \| '_ ` _ \ / _ \/ _` |/ _` |  | || '_ \/ __| __/ _` | | |/ _ \ '__|
- / ___ \| | | | (_| | | | (_) | | | | | |  __/ (_| | (_| |  | || | | \__ \ || (_| | | |  __/ |
-/_/   \_\_| |_|\__,_|_|  \___/|_| |_| |_|\___|\__,_|\__,_| |___|_| |_|___/\__\__,_|_|_|\___|_|
-EOF
-)
-
 REQUIREMENTS=$(cat <<'EOF'
  ____  _____ ___  _   _ ___ ____  _____ __  __ _____ _   _ _____ ____
 |  _ \| ____/ _ \| | | |_ _|  _ \| ____|  \/  | ____| \ | |_   _/ ___|
@@ -75,21 +66,20 @@ export PATH="$PATH:~/.local/bin"
 # ======================================= VARS =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-BOLD=$(tput bold)
-NORMAL=$(tput sgr0)
-
-NC='\033[0m' # No Color
-WHITE='\033[0;37m' # WHITE
-
-
+RESET="\033[0m"
+BOLD="\033[1m"
+BLUE="\033[38;5;12m"
+YELLOW="\033[38;5;11m"
 
 PKG_MANAGER=
 INSTALL_CMD=
 RUN_INSTALLER=
 
-TAGS=("all")
-PLAYBOOKS=("local")
+AVAILABLE_TAGS=("all")
+AVAILABLE_PLAYBOOKS=("local")
 
+TAGS="all"
+PLAYBOOK="local"
 DOTFILE_HOME="$HOME/.dotfiles"
 GITHUB_URL="https://github.com/lecoqjacob/dotsv2"
 
@@ -170,11 +160,6 @@ INSTALL_CMD=${INSTALLCMD[$PKG_MANAGER]}
 # ======================================= BASH HELPERS ===========================================#
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-function quit() {
-    gecho "Exiting..."
-    exit 0
-}
-
 function repeat(){
 	for i in $(seq 1 $2); do echo -n "$1"; done
 }
@@ -192,13 +177,7 @@ function dir_exist(){
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
 function gecho(){
-    # check if gum exist and if so use gum to log message, otherwise echo
-    if ! command -v gum &> /dev/null
-    then
-        echo -e "\033[1mDEBUG\033[0m $1"
-    else
-        gum log -fl debug --level.foreground="#FF" "$@"
-    fi
+    echo -e $BOLD$YELLOW"ANDROMEDA"$RESET $1
 }
 
 function double_gecho {
@@ -223,7 +202,6 @@ function title(){
     line c=$2
 }
 
-
 function line(){
     local "${@}"
 
@@ -240,26 +218,11 @@ function line(){
 
 function confirm() {
     msg=${1:-"Do you wish to continue? (Y/n)"}
-    with_echo=${2:-"true"}
-
-    if ! command -v gum &> /dev/null
-    then
-        gum confirm "$msg" --default=true --affirmative "Yes" --negative "No"
-        if [ $with_echo == "true" ]; then
-            echo
-        fi
-    else
-        read -p "$msg " choice
-        if [ $with_echo == "true" ]; then
-            echo
-        fi
-
-        case $choice in
-        y|Y|"") return 0 ;;
-        *) return 1 ;;
-        esac
-    fi
-
+    read -p "$(gecho "$msg")" choice
+    case $choice in
+    y|Y|"") return 0 ;;
+    *) return 1 ;;
+    esac
 }
 
 function ensure_repo(){
@@ -269,20 +232,8 @@ function ensure_repo(){
     fi
 }
 
-function run_gum() {
-    showoutput=${3:-"false"}
-    cmd="gum spin --title.bold --spinner dot --title '$1'"
-
-    if [ $showoutput == "true" ]; then
-        cmd="$cmd --show-output"
-    fi
-
-    eval "$cmd -- $2"
-    echo
-}
-
 function run_playbook(){
-    run_gum "Running playbook [ $PLAYBOOK ] with tags: [ $TAGS ]" "ansible-playbook -i $DOTFILE_HOME/hosts $DOTFILE_HOME/bootstrap.yml --tags $TAGS" "true"
+    ansible-playbook -i $DOTFILE_HOME/hosts $DOTFILE_HOME/bootstrap.yml --tags $TAGS
 }
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
@@ -320,19 +271,29 @@ function install_pkg() {
     fi
 
     pkg_to_install=${2:-$1}
-    cmd_to_run="$INSTALL_CMD $pkg_to_install"
     gecho "[ $1 ] is not installed. Installing..."
-    $cmd_to_run > /dev/null 2>&1
+    $INSTALL_CMD $pkg_to_install > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         gecho "Failed to install [ $1 ]"
         return 1
     fi
+
+    sleep 0.3
 }
 
-function installpkgs(){
-    pkgs=${pkgs-"true"}
+function install_pkgs(){
     for pkg in "${pkgs[@]}"; do
         install_pkg $pkg
+    done
+}
+
+function install_pkg_silent(){
+    install_pkg $1 > /dev/null 2>&1
+}
+
+function install_pkgs_silent(){
+    for pkg in "${pkgs[@]}"; do
+        install_pkg_silent $pkg
     done
 }
 
@@ -341,85 +302,112 @@ function installpkgs(){
 # =============================================================================================== #
 
 # Clear this bitch
-clear
-title "$ANDROMEDA"
 
-pkgs=("gum" "fastfetch")
-check_requirments "${pkgs[@]}"
-if [ $? == 1 ]; then
-    installpkgs pkgs="${pkgs[@]}"
-    section_end
+clear
+line
+cat <<'EOF'
+    _              _                              _         ___           _        _ _
+   / \   _ __   __| |_ __ ___  _ __ ___   ___  __| | __ _  |_ _|_ __  ___| |_ __ _| | | ___ _ __
+  / _ \ | '_ \ / _` | '__/ _ \| '_ ` _ \ / _ \/ _` |/ _` |  | || '_ \/ __| __/ _` | | |/ _ \ '__|
+ / ___ \| | | | (_| | | | (_) | | | | | |  __/ (_| | (_| |  | || | | \__ \ || (_| | | |  __/ |
+/_/   \_\_| |_|\__,_|_|  \___/|_| |_| |_|\___|\__,_|\__,_| |___|_| |_|___/\__\__,_|_|_|\___|_|
+EOF
+line
+
+############################
+## Dependencies
+############################
+pkgs=("base-devel" "gum" "fastfetch")
+install_pkgs_silent pkgs="${pkgs[@]}"
+
+# Clone paru and setup if not already
+if ! command -v paru &> /dev/null
+then
+    gecho "Paru not found. Installing..."
+    git clone https://aur.archlinux.org/paru.git
+    cd paru
+    makepkg -si
 fi
 
 fastfetch
+line
 
 ############################
 ## Main Section
 ############################
 
-echo
+# Skip installer if -s flag is passed
+if [ -n "$SKIP_INSTALL" ]; then
+    run_playbook
+    exit 0
+fi
+
+# If ansible is already installed, ask if they just want to run the playbook
+if check_requirment ansible; then
+    confirm "Ansible is already installed. Run playbook [ $BLUE$PLAYBOOK$RESET ] with tags [ $BLUE$TAGS$RESET ]? (Y/n)"
+    if [ $? -eq 0 ]; then
+        run_playbook
+        exit 0
+    else
+        line
+    fi
+fi
+
 cat << 'EOF'
 This script performs the following actions:
 -> Installs required packages [gum fastfetch nix ansible]
 -> Installs ansible-galaxy and ansible-galaxy packages
 -> Runs ansible playbook
 EOF
-echo
-
-if [ -n "$SKIP_INSTALL" ]; then
-gum log --structured --level debug "Creating file..." name file.txt
-    run_gum "Bootstrapping ansible..." "ansible-playbook -i hosts bootstrap.yml --tags $TAGS"
-    quit
-fi
+line
 
 confirm "Run installer? (Y/n)"
 if [ $? -ne 0 ]; then
-   quit
+   exit 0
 fi
 
-# ------------------------------------------------------------
-# -- Nix Installer -------------------------------------------
-# ------------------------------------------------------------
-function install_nix(){
+############################
+## Nix Installer
+############################
+section_start "$NIX"
+dir_exist "/nix"
+if [ $? -ne 0 ]; then
     msg="[ nix ] is not installed. Downloading and installing..."
     double_gecho "$msg"
     curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
     sleep 0.3
-}
-
-section_start "$NIX"
-dir_exist "/nix"
-if [ $? -ne 0 ]; then
-    install_nix
 else
     gecho "[ nix ] is already installed."
 fi
 section_end
 
-# ----------------------------------------------------------------
-# -- Ansible Installer -------------------------------------------
-# ----------------------------------------------------------------
-
+############################
+## Ansible Installer
+############################
 section_start "$ANSIBLE"
 install_pkg "ansible" "ansible-core"
+install_pkg "ansible-lint"
 section_end
 
-# -- Ansible Galaxy ------------------------------------
+############################
+## Ansible Galaxy
+############################
 section_start "$GALAXY"
-run_gum "Installing ansible-galaxy requirements..." "ansible-galaxy collection install -if -r requirements.yml" true
-gecho "Installed ansible-galaxy requirements"
+gecho "Installing ansible-galaxy requirements..."
+ansible-galaxy collection install -Uir requirements.yml
 section_end
 
-# -- Ansible Playbook ----------------------------------
+############################
+## Ansible Playbook
+############################
 section_start "$ANSIBLEPLAYBOOK"
 header="Select a playbook to run"
-PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${PLAYBOOKS[@]}"))
-gecho "$header: $PLAYBOOK"
+PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${AVAILABLE_PLAYBOOKS[@]}"))
+gecho "$header: $BLUE$PLAYBOOK$RESET"
 
 header="Select a tag to run"
-TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${TAGS[@]}"))
-gecho "$header: $TAGS"
-section_end
+TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${AVAILABLE_TAGS[@]}"))
+gecho "$header: $BLUE$TAGS$RESET"
 
 # LIFT OFF
 run_playbook

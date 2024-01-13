@@ -1,0 +1,15 @@
+# Created by https://www.toptal.com/developers/gitignore/api/ansible,dotfilessh
+# Edit at https://www.toptal.com/developers/gitignore?templates=ansible,dotfilessh
+
+### Ansible ###
+*.retry
+
+### DotfilesSh ###
+local-patch
+patched-src
+
+
+galaxy/ansible_collections/*
+!galaxy/ansible_collections/n16hth4wkk
+
+# End of https://www.toptal.com/developers/gitignore/api/ansible,dotfilessh

@@ -1,20 +1,41 @@
 ---
 - name: Allow sudo without password
   become: true
-  when: (skip == false) and (SUDO_USE_PASSWORD == false)
-  lineinfile:
+  when: (not skip_setup) and (not SUDO_USE_PASSWORD)
+  ansible.builtin.lineinfile:
     dest: /etc/sudoers
     state: present
-    validate: "visudo -cf %s"
-    line: "{{ USERNAME }}	ALL=NOPASSWD: ALL"
-    insertafter:  '^%admin\tALL=\(ALL\) ALL'
+    validate: visudo -cf %s
+    line: "{{ USERNAME }}\tALL=NOPASSWD: ALL"
+    insertafter: ^%admin\tALL=\(ALL\) ALL
 
 - name: Create directory ~/.local/bin/
-  when: skip == false
-  file:
+  when: not skip_setup
+  ansible.builtin.file:
     path: "{{ ansible_env.HOME }}/.local/bin"
     state: directory
-    mode: 0755
+    mode: "755"
 
-- name: Run OS dependant tasks
+- name: Gather the package facts
+  no_log: true
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Install generic packages
+  become: true
+  loop: "{{ system_packages.generic }}"
+  when: item not in ansible_facts.packages
+  ansible.builtin.package:
+    state: latest
+    name: "{{ item }}"
+
+- name: Upgrade OS packages
   ansible.builtin.include_tasks: "{{ SYSTEM_ROLE_DIR }}/tasks/{{ ansible_os_family }}.yml"
+
+- name: Run stow for /etc
+  become: true
+  n16hth4wkk.general.stow:
+    state: supress
+    package: etc
+    target: /etc
+    dir: roles/system/files

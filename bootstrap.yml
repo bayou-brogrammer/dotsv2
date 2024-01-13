@@ -1,37 +1,36 @@
 ---
-- name: Bootstrap development environment
+- name: Andromeda Playbook
   hosts: cosmos
-  connection: local
-    
+  connection: localhost,
+
   vars:
+    init_run_path: "{{ DOTFILES_HOME }}/.inital-run"
+    update_system: '{{ lookup("env", "ANDROMEDA_UPDATE") }}'
+    skip_setup: '{{ lookup("env", "ANDROMEDA_SKIP_SETUP") }}'
     ansible_password: '{{ lookup("env", "ANSIBLE_PASSWORD") }}'
 
   tasks:
-    - name: Prompt SSH password if necessary
-      when: ansible_password is undefined
-      block:
-        - name: Conditionally prompt for ssh/sudo password
-          no_log: true
-          register: password_prompt
-          ansible.builtin.pause:
-            prompt: "Password for {{ ansible_user_id }}@{{ ansible_host }}"
-            echo: false
+    - name: Display all variables/facts known for a host
+      no_log: "{{ ansible_verbosity != 4 }}"
+      ansible.builtin.debug:
+        var: hostvars[inventory_hostname]
+        verbosity: 4
 
-        - name: Set ansible_password
-          no_log: true
-          ansible.builtin.set_fact:
-            ansible_password: "{{ password_prompt.user_input }}"
+    - name: Ensure Environment and system is ready for ansible
+      ansible.builtin.include_tasks: "{{ item }}"
+      loop:
+        - tasks/env.yml
+        - tasks/bootstrap.yml
 
-    - name: Set ansible_become_password
-      no_log: true
-      when: ansible_become_password is undefined
-      ansible.builtin.set_fact:
-        ansible_become_password: "{{ ansible_password }}"
-
-    - ansible.builtin.import_tasks:
-        file: tasks/bootstrap.yml
-
-    - name: Bootstrap System
+    - name: System Setup
       tags: system
-      import_role:
+      ansible.builtin.import_role:
         name: system
+
+    - name: Create .inital-run file
+      no_log: true
+      when: (not skip_setup) and (not init_run.stat.exists)
+      ansible.builtin.file:
+        state: touch
+        mode: "0644"
+        path: init_run_path

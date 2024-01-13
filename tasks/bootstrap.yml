@@ -1,41 +1,39 @@
 ---
-- name: Check if initial install
+- name: bootstrap | Check if initial install
+  no_log: true
   register: init_run
-  stat:
-    path: "{{ DOTFILES_HOME }}/.initial_run"
+  when: not skip_setup
+  ansible.builtin.stat:
+    path: init_run_path
 
-- name: Set skip to true if initial run
-  set_fact:
-    skip: "{{ init_run.stat.exists }}"
+- name: bootstrap | Set skip_setup to true if initial run
+  when: not skip_setup
+  ansible.builtin.set_fact:
+    skip_setup: "{{ init_run.stat.exists }}"
 
-- name: Create initial run file
-  when: init_run.stat.exists == false
-  file:
-    state: touch
-    path: "{{ DOTFILES_HOME }}/.initial_run"
-
-- name: Install collections and roles together
-  when: skip == false
+- name: bootstrap | Install collections and roles together
+  when: not skip_setup
   community.general.ansible_galaxy_install:
     type: both
     requirements_file: requirements.yml
 
-- name: Install core packages
-  when: skip == false
+- name: bootstrap | Install core packages
+  when: not skip_setup
   ansible.builtin.package:
     state: latest
     name:
       - git
       - stow
 
-- name: Ensure dotfiles are present
-  when: skip == false
+- name: bootstrap | Ensure dotfiles are present
+  when: not skip_setup
   register: dotfiles_home
-  stat:
+  ansible.builtin.stat:
     path: "{{ DOTFILES_HOME }}"
 
-- name: Make sure dotfiles are present
-  when:  (skip == false) and (dotfiles_home.stat.exists == False)
-  git:
+- name: bootstrap | Make sure dotfiles are present
+  when: (not skip_setup) and (not dotfiles_home.stat.exists)
+  ansible.builtin.git:
     repo: https://github.com/{{ GIT.USER }}/dotfiles.git
     dest: ~/.dotfiles
+    version: HEAD

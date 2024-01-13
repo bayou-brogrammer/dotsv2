@@ -1,0 +1,34 @@
+---
+- name: build_modules | set workdir fact
+  set_fact:
+    _collection_dir: "{{ role_path }}/../../plugins/modules"
+  no_log: true
+- name: build_modules | set workdir fact
+  set_fact:
+    _collection_dir: "{{ _collection_dir | realpath }}"
+  no_log: true
+
+- name: build_modules | check go is installed
+  no_log: true
+  register: _go_version
+  command:
+    cmd: go version
+
+- name: build_modules | check if go is installed
+  no_log: true
+  when: _go_version.rc != 0
+  ansible.builtin.include_role:
+    name: gantsign.golang
+
+- name: build_modules | builing module {{ module_path }}
+  shell:
+    cmd: >-
+      go build -o build/{{ module_name }} {{ module_path }}
+    chdir: "{{ _collection_dir }}"
+
+- name: build_modules | Linking [ {{ module_name }} ] to {{ _collection_dir }}
+  file:
+    force: true
+    state: link
+    path: "{{ _collection_dir }}/{{ module_name }}"
+    src: "{{ _collection_dir }}/build/{{ module_name }}"

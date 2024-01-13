@@ -1,7 +1,12 @@
 ---
-collections:
-  - name: community.general
+roles:
+  - name: gantsign.golang
 
-# roles:
-#   - name: geerlingguy.nodejs
-  # - name: elliotweiser.osx-command-line-tools
+collections:
+  - name: kewlfft.aur # AUR packages
+  - name: community.general
+    source: https://galaxy.ansible.com
+
+  - name: n16hth4wkk.general
+    source: ./galaxy/n16hth4wkk/general
+    type: dir
