@@ -33,12 +33,15 @@
         var: hostvars[inventory_hostname]
         verbosity: 4
 
-    - name: Andromeda | Ensure Environment and system is ready for ansible
-      ansible.builtin.include_tasks: tasks/bootstrap.yml
+    - name: Ensure Environment and system is ready for ansible
+      ansible.builtin.include_tasks: "{{ item }}"
+      loop:
+        - tasks/env.yml
+        - tasks/bootstrap.yml
 
     - name: Andromeda | Base Setup
       tags: base
-      ansible.builtin.import_role:
+      ansible.builtin.include_role:
         name: base
 
     - name: Andromeda | Create .inital-run file

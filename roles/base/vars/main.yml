@@ -38,6 +38,7 @@ base_packages:
 
   # Paru, Yay, etc
   aur:
+    - biome
     - vscodium
 
   pacman:
