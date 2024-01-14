@@ -22,18 +22,16 @@
     manager: auto
 
 - name: Install generic packages
-  become: true
-  loop: "{{ system_packages.generic }}"
-  when: item not in ansible_facts.packages
+  # become: true
   ansible.builtin.package:
     state: latest
-    name: "{{ item }}"
+    name: "{{ system_packages.generic }}"
 
 - name: Upgrade OS packages
   ansible.builtin.include_tasks: "{{ SYSTEM_ROLE_DIR }}/tasks/{{ ansible_os_family }}.yml"
 
 - name: Run stow for /etc
-  become: true
+  # become: true
   n16hth4wkk.general.stow:
     state: supress
     package: etc

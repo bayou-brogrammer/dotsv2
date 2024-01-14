@@ -3,3 +3,5 @@ cosmos
 
 [local:vars]
 ansible_connection=local
+
+[password]

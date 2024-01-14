@@ -7,6 +7,7 @@
     path: init_run_path
 
 - name: bootstrap | Set skip_setup to true if initial run
+  no_log: true
   when: not skip_setup
   ansible.builtin.set_fact:
     skip_setup: "{{ init_run.stat.exists }}"

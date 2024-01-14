@@ -69,6 +69,7 @@ class CallbackModule(CallbackModule_default):
     def andromeda_display(
         self,
         text,
+        stderr=None,
         tabbed=False,
         newline=True,
         text_color=None,
@@ -77,7 +78,7 @@ class CallbackModule(CallbackModule_default):
         if tabbed:
             msg = "  %s" % text
 
-        self._display.display(msg, color=text_color, newline=newline)
+        self._display.display(msg, color=text_color, newline=newline, stderr=stderr)
 
     def _run_is_verbose(self, result):
         return (
@@ -160,8 +161,10 @@ class CallbackModule(CallbackModule_default):
         display_color = C.COLOR_UNREACHABLE
         task_result = self._process_result_output(result, msg)
 
-        self._display.display(
-            "  " + task_result, display_color, stderr=self.get_option("display_failed_stderr")
+        self.andromeda_display(
+            "  " + task_result,
+            text_color=display_color,
+            stderr=self.get_option("display_failed_stderr"),
         )
 
     def v2_runner_on_ok(self, result, msg="ok", display_color=C.COLOR_OK):
@@ -194,8 +197,10 @@ class CallbackModule(CallbackModule_default):
             msg += " | item: %s" % (item_value,)
 
         task_result = self._process_result_output(result, msg)
-        self._display.display(
-            "  " + task_result, display_color, stderr=self.get_option("display_failed_stderr")
+        self.andromeda_display(
+            "  " + task_result,
+            text_color=display_color,
+            stderr=self.get_option("display_failed_stderr"),
         )
 
     def v2_runner_on_skipped(self, result, ignore_errors=False):
@@ -203,7 +208,6 @@ class CallbackModule(CallbackModule_default):
             self._preprocess_result(result)
             display_color = C.COLOR_SKIP
             msg = "skipped"
-
             task_result = self._process_result_output(result, msg)
             self._display.display("  " + task_result, display_color)
         else:
@@ -268,17 +272,20 @@ class CallbackModule(CallbackModule_default):
             return
 
         self._get_task_display_name(task)
+        if self.task_display_name is None:
+            return
 
-        if self.task_display_name is not None:
-            if task.check_mode and self.get_option("check_mode_markers"):
-                self._display.display("%s (check mode)..." % self.task_display_name)
-            else:
-                self.andromeda_title(
-                    "%s..." % self.task_display_name,
-                    title="[ANDROMEDA TASK]: ",
-                    title_color=COLOR_ANDROMEDA_TASK,
-                )
-                # self._display.display("%s..." % self.task_display_name)
+        msg = self.task_display_name
+        if task.check_mode and self.get_option("check_mode_markers"):
+            msg += " (check mode)..."
+        else:
+            msg += "..."
+
+        self.andromeda_title(
+            msg,
+            title="[ANDROMEDA TASK]: ",
+            title_color=COLOR_ANDROMEDA_TASK,
+        )
 
     def v2_playbook_on_handler_task_start(self, task):
         self._get_task_display_name(task)

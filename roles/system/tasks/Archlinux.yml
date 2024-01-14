@@ -22,8 +22,8 @@
     state: latest
     name: "{{ item }}"
 
-- name: Archlinux | Install AUR packages
-  become: true
-  kewlfft.aur.aur:
-    state: latest
-    name: "{{ system_packages.aur }}"
+# - name: Archlinux | Install AUR packages
+#   become: true
+#   kewlfft.aur.aur:
+#     state: latest
+#     name: "{{ system_packages.aur }}"

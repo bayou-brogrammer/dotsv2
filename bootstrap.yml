@@ -7,27 +7,36 @@
     init_run_path: "{{ DOTFILES_HOME }}/.inital-run"
     update_system: '{{ lookup("env", "ANDROMEDA_UPDATE") }}'
     skip_setup: '{{ lookup("env", "ANDROMEDA_SKIP_SETUP") }}'
-    ansible_password: '{{ lookup("env", "ANSIBLE_PASSWORD") }}'
+    ansible_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
+
+    password: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      36356430613666613136393132633461663038333733343466336466333832613731643061363639
+      3664373763313736613837373130633637643235393836390a613666653734346133663435306431
+      63383633666438396364353665663263656139313666643039363765633634326265653531646164
+      3233383861616332610a316464666337623563363164646165663061323035656161666561386462
+      3965
 
   tasks:
-    - name: Display all variables/facts known for a host
+    - name: Andromeda | Display all variables/facts known for a host
+      ansible.builtin.debug:
+        msg: "Andromeda | Running on {{ ansible_password }}"
+
+    - name: Andromeda | Display all variables/facts known for a host
       no_log: "{{ ansible_verbosity != 4 }}"
       ansible.builtin.debug:
         var: hostvars[inventory_hostname]
         verbosity: 4
 
-    - name: Ensure Environment and system is ready for ansible
-      ansible.builtin.include_tasks: "{{ item }}"
-      loop:
-        - tasks/env.yml
-        - tasks/bootstrap.yml
+    - name: Andromeda | Ensure Environment and system is ready for ansible
+      ansible.builtin.include_tasks: tasks/bootstrap.yml
 
-    - name: System Setup
+    - name: Andromeda | System Setup
       tags: system
       ansible.builtin.import_role:
         name: system
 
-    - name: Create .inital-run file
+    - name: Andromeda | Create .inital-run file
       no_log: true
       when: (not skip_setup) and (not init_run.stat.exists)
       ansible.builtin.file:
