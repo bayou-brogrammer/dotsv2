@@ -1,0 +1,19 @@
+# Maintainers
+
+This file describes how this project is maintained. When making changes to the master
+branch, this file tells you who needs to review a pull request and who has the right
+to merge it. Additionally, there are other relevant sections describing how to do the
+maintenance.
+
+## Project Maintainer
+
+* [n16hth4wkk](https://github.com/n16hth4wkk)
+
+## Documentation Management
+
+## Pull Request Management
+
+When a Pull Request (PR) passes CI tests and the community successfully resolved any
+issues raised during the peer review of the PR, the PR is ready for a merger.
+
+## Release Management

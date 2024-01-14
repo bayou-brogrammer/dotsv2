@@ -80,7 +80,7 @@ AVAILABLE_PLAYBOOKS=("local")
 
 TAGS="all"
 PLAYBOOK="local"
-DOTFILE_HOME="$HOME/.dotfiles"
+DOTFILE_HOME="$home/.dotfiles"
 GITHUB_URL="https://github.com/lecoqjacob/dotsv2"
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #

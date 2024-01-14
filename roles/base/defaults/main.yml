@@ -1,0 +1,4 @@
+---
+# additional packages to install in addition to default ones (see ../vars/main.yml)
+base_additional_packages:
+  - fontconfig

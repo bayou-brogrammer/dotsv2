@@ -1,0 +1,27 @@
+---
+- name: Archlinux | Update/Upgrade pacman
+  become: true
+  when: update_system or not skip_setup
+  community.general.pacman:
+    upgrade: true
+    update_cache: true
+
+- name: Archlinux | Upgrade the system using paru
+  become: true
+  when: update_system or not skip_setup
+  kewlfft.aur.aur:
+    use: paru
+    upgrade: true
+    aur_only: true
+
+- name: Archlinux | Install pacman packages
+  become: true
+  ansible.builtin.package:
+    state: latest
+    name: "{{ base_packages.pacman }}"
+
+- name: Archlinux | Install AUR packages
+  become: true
+  kewlfft.aur.aur:
+    state: latest
+    name: "{{ base_packages.aur }}"

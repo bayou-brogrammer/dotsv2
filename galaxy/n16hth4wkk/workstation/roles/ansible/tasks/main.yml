@@ -1,0 +1,70 @@
+---
+- name: Ansible | Install for --user
+  when: not ansible_virtualenv
+  block:
+    - name: Ansible | Ensure ansible for user # noqa package-latest
+      ansible.builtin.pip:
+        name: ansible
+        extra_args: --user
+        state: latest
+
+    - name: Ansible | Ensure ansible dependencies for user # noqa package-latest
+      ansible.builtin.pip:
+        name: "{{ ansible_packages | default([]) | union(ansible_dependencies | default([])) | list | unique }}"
+        extra_args: --user
+        state: latest
+
+    - name: Ansible | Ensure molecule for user # noqa package-latest
+      ansible.builtin.pip:
+        name: "{{ ['molecule'] | union(ansible_molecule_plugins | default([]) | map('regex_replace', '(.+)', 'molecule-plugins[\\1]')) | list | unique }}"
+        extra_args: --user
+        state: latest
+      when: ansible_install_molecule | bool
+
+
+- name: Ansible | Check virtualenv exists at "{{ ansible_virtualenv }}"
+  register: _stat_ansible_virtualenv
+  ansible.builtin.stat:
+    path: "{{ ansible_virtualenv }}"
+  when:
+    - ansible_virtualenv is string
+    - ansible_virtualenv | length > 0
+
+- name: Ansible | Install in virtualenv
+  when:
+    - _stat_ansible_virtualenv.stat is defined
+    - _stat_ansible_virtualenv.stat.exists
+    - _stat_ansible_virtualenv.stat.isdir
+  block:
+    - name: Ansible | Ensure ansible in virtualenv # noqa package-latest
+      ansible.builtin.pip:
+        name: ansible
+        state: latest
+        virtualenv: "{{ ansible_virtualenv }}"
+
+    - name: Ansible | Ensure ansible dependencies in virtualenv # noqa package-latest
+      ansible.builtin.pip:
+        name: "{{ ansible_packages | default([]) | union(ansible_dependencies | default([])) | list | unique }}"
+        state: latest
+        virtualenv: "{{ ansible_virtualenv }}"
+
+    - name: Ansible | Install collections
+      when: not skip_setup
+      loop: "{{ ansible_galaxy_collections }}"
+      community.general.ansible_galaxy_install:
+        type: collection
+        name: "{{ item }}"
+
+    - name: Ansible | Install roles
+      when: not skip_setup
+      loop: "{{ ansible_galaxy_roles }}"
+      community.general.ansible_galaxy_install:
+        type: role
+        name: "{{ item }}"
+
+    - name: Ansible | Ensure molecule in virtualenv # noqa package-latest
+      ansible.builtin.pip:
+        name: "{{ ['molecule'] | union(ansible_molecule_plugins | default([]) | map('regex_replace', '(.+)', 'molecule-plugins[\\1]')) | list | unique }}"
+        state: latest
+        virtualenv: "{{ ansible_virtualenv }}"
+      when: ansible_install_molecule | bool

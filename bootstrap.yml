@@ -4,11 +4,9 @@
   connection: localhost,
 
   vars:
-    init_run_path: "{{ DOTFILES_HOME }}/.inital-run"
+    init_run_path: "{{ dotfiles_home }}/.init"
     update_system: '{{ lookup("env", "ANDROMEDA_UPDATE") }}'
     skip_setup: '{{ lookup("env", "ANDROMEDA_SKIP_SETUP") }}'
-    ansible_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
-
     password: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       36356430613666613136393132633461663038333733343466336466333832613731643061363639
@@ -17,11 +15,18 @@
       3233383861616332610a316464666337623563363164646165663061323035656161666561386462
       3965
 
-  tasks:
-    - name: Andromeda | Display all variables/facts known for a host
-      ansible.builtin.debug:
-        msg: "Andromeda | Running on {{ ansible_password }}"
+    # ansible_become_method: sudo
+    # ansible_become: true # use sudo
+    ansible_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
+    ansible_become_pass: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
+    ansible_become_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
 
+  roles:
+    - role: n16hth4wkk.workstation.ansible
+      vars:
+        ansible_virtualenv: "{{ ansible_env.HOME }}/.virtualenvs/ansible"
+
+  tasks:
     - name: Andromeda | Display all variables/facts known for a host
       no_log: "{{ ansible_verbosity != 4 }}"
       ansible.builtin.debug:
@@ -31,15 +36,15 @@
     - name: Andromeda | Ensure Environment and system is ready for ansible
       ansible.builtin.include_tasks: tasks/bootstrap.yml
 
-    - name: Andromeda | System Setup
-      tags: system
+    - name: Andromeda | Base Setup
+      tags: base
       ansible.builtin.import_role:
-        name: system
+        name: base
 
     - name: Andromeda | Create .inital-run file
       no_log: true
       when: (not skip_setup) and (not init_run.stat.exists)
-      ansible.builtin.file:
-        state: touch
+      ansible.builtin.copy:
         mode: "0644"
-        path: init_run_path
+        dest: "{{ init_run_path }}"
+        content: This file is used to determine if the system has been setup before.

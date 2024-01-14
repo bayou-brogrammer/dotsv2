@@ -1,0 +1,48 @@
+---
+base_packages:
+  ############################
+  # Packages for all distros
+  ############################
+  generic:
+    - alacritty
+    - cmake
+    - curl
+    - expac
+    - git
+    - htop
+    - make
+    - neovim
+    - pre-commit
+    - stow
+    - tar
+    - tmux
+    - tmux
+    - unrar
+    - unzip
+    - vifm
+    - wget
+    - zellij
+    - zip
+    - zoxide
+    - zsh
+
+  ############################
+  # Packages for Ubuntu
+  ############################
+  apt:
+    - build-essential
+
+  ##########################
+  # Packages for Archlinux
+  ##########################
+
+  # Paru, Yay, etc
+  aur:
+    - vscodium
+
+  pacman:
+    - base-devel
+    - linux
+    - linux-headers
+    - linux-firmware
+    - github-cli

@@ -1,0 +1,30 @@
+---
+version: 1.0.0
+name: workstation
+namespace: n16hth4wkk
+
+readme: README.md
+license_file: LICENSE
+description: Collection for setting up a Linux/Mac dev workstation with Ansible
+
+authors:
+  - N16hth4wk <lecoqjacob@gmail.com>
+
+tags:
+  - tools
+  - community
+  - n16hth4wkk
+  - workstation
+
+homepage: http://example.com
+documentation: http://docs.example.com
+issues: http://example.com/issue/tracker
+repository: http://example.com/repository
+
+# A list of file glob-like patterns used to filter any files or directories that should not be included in the build
+# artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
+# uses 'fnmatch' to match the files or directories. Some directories and files like 'galaxy.yml', '*.pyc', '*.retry',
+# and '.git' are always filtered. Mutually exclusive with 'manifest'
+build_ignore:
+  - .gitignore
+  - changelogs/.plugin-cache.yaml

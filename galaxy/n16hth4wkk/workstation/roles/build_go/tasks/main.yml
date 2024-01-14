@@ -1,0 +1,39 @@
+---
+- name: Build Go | set collection dir
+  ansible.builtin.set_fact:
+    _collection_dir: "{{ role_path }}/../../plugins/modules"
+  no_log: true
+
+- name: Build Go | set collection dir to absolute path
+  ansible.builtin.set_fact:
+    _collection_dir: "{{ _collection_dir | realpath }}"
+  no_log: true
+
+- name: Build Go | check go is installed
+  no_log: true
+  register: _go_version
+  changed_when: _go_version.rc != 0
+  ansible.builtin.command: go version
+
+- name: Build Go | check if go is installed
+  no_log: true
+  register: golang_include
+  when: _go_version.rc != 0
+  changed_when: golang_include.rc != 0
+  ansible.builtin.import_role:
+    name: gantsign.golang
+
+- name: Build Go | builing module {{ module_path }}
+  register: golang_build
+  changed_when: golang_build.rc != 0
+  ansible.builtin.command:
+    cmd: >-
+      go build -o build/{{ module_name }} {{ module_path }}
+    chdir: "{{ _collection_dir }}"
+
+- name: Build Go | Linking [ {{ module_name }} ]
+  ansible.builtin.file:
+    force: true
+    state: link
+    path: "{{ _collection_dir }}/{{ module_name }}"
+    src: "{{ _collection_dir }}/build/{{ module_name }}"

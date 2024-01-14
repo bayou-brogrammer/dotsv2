@@ -4,7 +4,7 @@
   register: init_run
   when: not skip_setup
   ansible.builtin.stat:
-    path: init_run_path
+    path: "{{ init_run_path }}"
 
 - name: bootstrap | Set skip_setup to true if initial run
   no_log: true
@@ -30,11 +30,11 @@
   when: not skip_setup
   register: dotfiles_home
   ansible.builtin.stat:
-    path: "{{ DOTFILES_HOME }}"
+    path: "{{ dotfiles_home }}"
 
 - name: bootstrap | Make sure dotfiles are present
   when: (not skip_setup) and (not dotfiles_home.stat.exists)
   ansible.builtin.git:
-    repo: https://github.com/{{ GIT.USER }}/dotfiles.git
+    repo: https://github.com/{{ git.user }}/dotfiles.git
     dest: ~/.dotfiles
     version: HEAD

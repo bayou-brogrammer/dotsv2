@@ -1,0 +1,34 @@
+---
+- name: Allow sudo without password
+  become: true
+  when: (not skip_setup) and (sudo_use_password)
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    state: present
+    validate: visudo -cf %s
+    line: "{{ username }}\tALL=NOPASSWD: ALL"
+    insertafter: ^%admin\tALL=\(ALL\) ALL
+
+- name: Create directory ~/.local/bin/
+  when: not skip_setup
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.local/bin"
+    state: directory
+    mode: "755"
+
+- name: Install generic packages
+  become: true
+  ansible.builtin.package:
+    state: latest
+    name: "{{ base_packages.generic | union(base_additional_packages) | list | unique }}"
+
+- name: Upgrade OS packages
+  ansible.builtin.include_tasks: "roles/base/tasks/{{ ansible_os_family }}.yml"
+
+- name: Update fonts # noqa no-changed-when
+  when: not skip_setup
+  ansible.builtin.shell:
+    cmd: |-
+      cp -vr $HOME/.fonts/* /usr/share/fonts/truetype/
+      dpkg-reconfigure fontconfig
+      fc-cache -fv

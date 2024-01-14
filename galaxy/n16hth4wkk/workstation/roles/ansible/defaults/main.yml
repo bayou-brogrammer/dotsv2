@@ -1,0 +1,24 @@
+---
+# optional path to an existing virtual environment to install ansible to
+# setting this variable does NOT install virtual environment itself if it doesn't exist
+ansible_virtualenv:
+
+# additional packages for ansible
+ansible_packages:
+  - ansible-lint
+  - yamllint
+
+# additional dependencies that are required by some ansible modules
+ansible_dependencies:
+  # - general
+  - jmespath # community.general.json_query
+
+ansible_galaxy_roles:
+  - gantsign.golang
+
+ansible_galaxy_collections:
+  - community.general
+
+ansible_install_molecule: true
+ansible_molecule_plugins:
+  - docker
