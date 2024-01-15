@@ -12,18 +12,18 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-
 DOCUMENTATION = """
 ---
 module: stow
-short_description: Manages apk packages
+author: "Jacob LeCoq (@n16hth4wkk)"
+short_description: Manage packages with stow.
 
-description:
-  - Manages C(apk) packages for Alpine Linux.
-author: "Kevin Brebanov (@kbrebanov)"
+description: > 
+  Stow is a symlink farm manager which takes distinct packages of software and/or data located in 
+  separate directories on the filesystem, and makes them appear to be installed in the same place.
 
 extends_documentation_fragment:
-  - community.general.attributes
+  - n16hth4wkk.workstation.attributes
 
 attributes:
   check_mode:
@@ -118,10 +118,10 @@ EXAMPLES = """
 
 RETURN = """
 packages:
-    description: a list of packages that have been changed
-    returned: when packages have changed
     type: list
+    returned: when packages have changed
     sample: ['package', 'other-package']
+    description: a list of packages that have been changed
 """
 
 import re

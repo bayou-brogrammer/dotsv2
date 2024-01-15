@@ -1,0 +1,31 @@
+import = [
+  "/home/n16hth4wk/.config/alacritty/fonts.toml",
+  "~/.config/alacritty/themes/themes/argonaut.toml",
+]
+
+live_config_reload = true
+
+[cursor]
+unfocused_hollow = false
+
+[cursor.style]
+blinking = "On"
+shape = "Block"
+
+[env]
+TERM = "alacritty"
+WINIT_X11_SCALE_FACTOR = "1.0"
+
+[window]
+opacity = 0.95
+decorations = "full"
+dynamic_title = true
+startup_mode = "Windowed"
+
+[window.dimensions]
+lines = 24
+columns = 82
+
+[window.padding]
+x = 12
+y = 12
