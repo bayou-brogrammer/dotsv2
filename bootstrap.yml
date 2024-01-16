@@ -15,8 +15,6 @@
       3233383861616332610a316464666337623563363164646165663061323035656161666561386462
       3965
 
-    # ansible_become_method: sudo
-    # ansible_become: true # use sudo
     ansible_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
     ansible_become_pass: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
     ansible_become_password: '{{-  lookup("env", "ANDROMEDA_PASSWORD") | default(password, true) -}}'
@@ -33,14 +31,27 @@
         var: hostvars[inventory_hostname]
         verbosity: 4
 
+    - name: Base | Check if initial install
+      no_log: true
+      register: init_run
+      when: not skip_setup
+      ansible.builtin.stat:
+        path: "{{ init_run_path }}"
+
+    - name: Base | Set skip_setup to true if initial run
+      no_log: true
+      when: not skip_setup
+      ansible.builtin.set_fact:
+        skip_setup: "{{ init_run.stat.exists }}"
+
     - name: Andromeda | Base Setup
       tags: base
       ansible.builtin.include_role:
         name: base
 
     - name: Andromeda | Create .inital-run file
-      no_log: true
-      when: (not skip_setup) and (not init_run.stat.exists)
+      # no_log: true
+      when: not init_run.stat.exists
       ansible.builtin.copy:
         mode: "0644"
         dest: "{{ init_run_path }}"

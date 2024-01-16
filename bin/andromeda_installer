@@ -1,19 +1,13 @@
-#!/bin/sh
+#!/bin/bash
+
+#set -e
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 # ======================================= ASCII =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-REQUIREMENTS=$(cat <<'EOF'
- ____  _____ ___  _   _ ___ ____  _____ __  __ _____ _   _ _____ ____
-|  _ \| ____/ _ \| | | |_ _|  _ \| ____|  \/  | ____| \ | |_   _/ ___|
-| |_) |  _|| | | | | | || || |_) |  _| | |\/| |  _| |  \| | | | \___ \
-|  _ <| |__| |_| | |_| || ||  _ <| |___| |  | | |___| |\  | | |  ___) |
-|_| \_\_____\__\_\\___/|___|_| \_\_____|_|  |_|_____|_| \_| |_| |____/
-EOF
-)
-
-NIX=$(cat <<'EOF'
+NIX=$(
+    cat <<'EOF'
  _   _ _____  __  ___ _   _ ____ _____  _    _     _     _____ ____
 | \ | |_ _\ \/ / |_ _| \ | / ___|_   _|/ \  | |   | |   | ____|  _ \
 |  \| || | \  /   | ||  \| \___ \ | | / _ \ | |   | |   |  _| | |_) |
@@ -22,7 +16,8 @@ NIX=$(cat <<'EOF'
 EOF
 )
 
-ANSIBLE=$(cat <<'EOF'
+ANSIBLE=$(
+    cat <<'EOF'
     _    _   _ ____ ___ ____  _     _____   ___ _   _ ____ _____  _    _     _     _____ ____
    / \  | \ | / ___|_ _| __ )| |   | ____| |_ _| \ | / ___|_   _|/ \  | |   | |   | ____|  _ \
   / _ \ |  \| \___ \| ||  _ \| |   |  _|    | ||  \| \___ \ | | / _ \ | |   | |   |  _| | |_) |
@@ -31,7 +26,8 @@ ANSIBLE=$(cat <<'EOF'
 EOF
 )
 
-GALAXY=$(cat <<'EOF'
+GALAXY=$(
+    cat <<'EOF'
     _    _   _ ____ ___ ____  _     _____    ____    _    _        _    __  ____   __
    / \  | \ | / ___|_ _| __ )| |   | ____|  / ___|  / \  | |      / \   \ \/ /\ \ / /
   / _ \ |  \| \___ \| ||  _ \| |   |  _|   | |  _  / _ \ | |     / _ \   \  /  \ V /
@@ -40,7 +36,8 @@ GALAXY=$(cat <<'EOF'
 EOF
 )
 
-ANSIBLEPLAYBOOK=$(cat <<'EOF'
+ANSIBLEPLAYBOOK=$(
+    cat <<'EOF'
     _    _   _ ____ ___ ____  _     _____   ____  _        _ __   ______   ___   ___  _  __
    / \  | \ | / ___|_ _| __ )| |   | ____| |  _ \| |      / \\ \ / / __ ) / _ \ / _ \| |/ /
   / _ \ |  \| \___ \| ||  _ \| |   |  _|   | |_) | |     / _ \\ V /|  _ \| | | | | | | ' /
@@ -49,16 +46,7 @@ ANSIBLEPLAYBOOK=$(cat <<'EOF'
 EOF
 )
 
-BOOTSTRAP=$(cat <<'EOF'
- ____   ___   ___ _____ ____ _____ ____      _    ____  ____ ___ _   _  ____
-| __ ) / _ \ / _ \_   _/ ___|_   _|  _ \    / \  |  _ \|  _ \_ _| \ | |/ ___|
-|  _ \| | | | | | || | \___ \ | | | |_) |  / _ \ | |_) | |_) | ||  \| | |  _
-| |_) | |_| | |_| || |  ___) || | |  _ <  / ___ \|  __/|  __/| || |\  | |_| |
-|____/ \___/ \___/ |_| |____/ |_| |_| \_\/_/   \_\_|   |_|  |___|_| \_|\____|
-EOF
-)
-
-#set -e
+# shellcheck disable=SC1091
 source /etc/os-release
 export PATH="$PATH:~/.local/bin"
 
@@ -73,21 +61,20 @@ YELLOW="\033[38;5;11m"
 
 PKG_MANAGER=
 INSTALL_CMD=
-RUN_INSTALLER=
 
 AVAILABLE_TAGS=("all")
 AVAILABLE_PLAYBOOKS=("local")
 
 TAGS="all"
 PLAYBOOK="local"
-DOTFILE_HOME="$home/.dotfiles"
+DOTFILE_HOME="$HOME/.dotfiles"
 GITHUB_URL="https://github.com/lecoqjacob/dotsv2"
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 # ======================================= INPUT =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-function usage(){
+function usage() {
     echo "Usage: $0 [options] [command]"
     echo
     echo "Commands:"
@@ -100,12 +87,11 @@ function usage(){
 }
 
 # Get the options
-while [[ "$#" -gt 0 ]]
-  do
+while [[ "$#" -gt 0 ]]; do
     case $1 in
-      install) INSTALL="true";;
-      -t|--tags) TAGS="true";;
-      -s|--skip) SKIP_INSTALL="true";;
+    install) INSTALL="true" ;;
+    -t | --tags) TAGS="true" ;;
+    -s | --skip) SKIP_INSTALL="true" ;;
     esac
     shift
 done
@@ -119,37 +105,28 @@ fi
 # ================================== Gather OS / Package Manager Info ========================= #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-declare -A OSINFO;
-OSINFO[/etc/SuSE-release]=zypp
-OSINFO[/etc/redhat-release]=yum
-OSINFO[/etc/alpine-release]=apk
-OSINFO[/etc/arch-release]=pacman
-OSINFO[/etc/gentoo-release]=emerge
-OSINFO[/etc/debian_version]=apt-get
+declare -A OSINFO
+OSINFO["/etc/SuSE-release"]=zypp
+OSINFO["/etc/fedora-release"]=dnf
+OSINFO["/etc/alpine-release"]=apk
+OSINFO["/etc/arch-release"]=pacman
+OSINFO["/etc/gentoo-release"]=emerge
+OSINFO["/etc/debian_version"]=apt-get
 
-declare -A PKGMANAGER;
-PKGMANAGER[yum]=yum
-PKGMANAGER[apk]=apk
-PKGMANAGER[brew]=brew
-PKGMANAGER[zypp]=zypp
-PKGMANAGER[pacman]=pacman
-PKGMANAGER[emerge]=emerge
-PKGMANAGER[apt-get]=apt-get
-
-declare -A INSTALLCMD;
-INSTALLCMD[brew]="brew install -y"
-INSTALLCMD[emerge]="sudo emerge -a"
-INSTALLCMD[yum]="sudo yum install -y"
-INSTALLCMD[apk]="sudo apk add --no-cache"
-INSTALLCMD[zypp]="sudo zypper install -y"
-INSTALLCMD[apt-get]="sudo apt-get install -y"
+declare -A INSTALLCMD
+INSTALLCMD["brew"]="brew install -y"
+INSTALLCMD["emerge"]="sudo emerge -a"
+INSTALLCMD["dnf"]="sudo dnf install -y"
+INSTALLCMD["yum"]="sudo yum install -y"
+INSTALLCMD[""]="sudo zypper install -y"
+INSTALLCMD["apk"]="sudo apk add --no-cache"
+INSTALLCMD["apt-get"]="sudo apt-get install -y"
 INSTALLCMD[pacman]="sudo pacman -S --noconfirm"
 
 # Assign package manager and install command
-for f in ${!OSINFO[@]}
-do
-    if [[ -f $f ]];then
-        PKG_MANAGER=${PKGMANAGER[${OSINFO[$f]}]}
+for f in "${!OSINFO[@]}"; do
+    if [[ -f $f ]]; then
+        PKG_MANAGER=${OSINFO[$f]}
         break
     fi
 done
@@ -160,11 +137,11 @@ INSTALL_CMD=${INSTALLCMD[$PKG_MANAGER]}
 # ======================================= BASH HELPERS ===========================================#
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-function repeat(){
-	for i in $(seq 1 $2); do echo -n "$1"; done
+function repeat() {
+    for _ in $(seq 1 "$2"); do echo -n "$1"; done
 }
 
-function dir_exist(){
+function dir_exist() {
     if [ -d "$1" ]; then
         return 0
     else
@@ -176,8 +153,8 @@ function dir_exist(){
 # ======================================= HELPERS =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-function gecho(){
-    echo -e $BOLD$YELLOW"ANDROMEDA"$RESET $1
+function gecho() {
+    echo -e "$BOLD""$YELLOW""ANDROMEDA""$RESET" "$1"
 }
 
 function double_gecho {
@@ -187,93 +164,92 @@ function double_gecho {
 
 function section_start() {
     echo "$1"
-    line c=$2
+    line c="$2"
 }
 
+# shellcheck disable=SC2120
 function section_end() {
     echo "$1"
     sleep 0.5
 }
 
-function title(){
+function title() {
     echo
-    line c=$2
+    line c="$2"
     echo "$1"
-    line c=$2
+    line c="$2"
 }
 
-function line(){
+function line() {
     local "${@}"
 
     char=${ch:-"="}
     count=${c:-100}
     double_echo=${d:-"false"}
-    repeat "$char" $count
+    repeat "$char" "$count"
     echo
 
-    if [ $double_echo == "true" ]; then
+    if [ "$double_echo" == "true" ]; then
         echo
     fi
 }
 
 function confirm() {
     msg=${1:-"Do you wish to continue? (Y/n)"}
-    read -p "$(gecho "$msg")" choice
+    read -r -p "$(gecho "$msg ")" choice
     case $choice in
-    y|Y|"") return 0 ;;
+    y | Y | "") return 0 ;;
+    n | N) return 1 ;;
     *) return 1 ;;
     esac
 }
 
-function ensure_repo(){
+function ensure_repo() {
+    gecho "Ensuring dotfiles repo is cloned..."
+
     if [ ! -d "$DOTFILE_HOME" ]; then
-        gecho "Cloning dotfiles into $DOTFILE_HOME..."
+        gecho "Cloning dotfiles into $DOTFILE_HOME...\n"
         git clone $GITHUB_URL "$DOTFILE_HOME" --depth 1
     fi
 }
 
-function run_playbook(){
-    ansible-playbook -i $DOTFILE_HOME/hosts $DOTFILE_HOME/bootstrap.yml --tags $TAGS
+function run_playbook() {
+    ansible-playbook -i "$DOTFILE_HOME"/inventory/hosts "$DOTFILE_HOME"/bootstrap.yml --tags "$TAGS" --ask-vault-password
 }
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 # ======================================= PACKAGES =============================================== #
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> #
 
-function check_requirment(){
-    if ! command -v $1 &> /dev/null
-    then
+function check_requirment() {
+    if ! command -v "$1" &>/dev/null; then
         return 1
     else
         return 0
     fi
 }
 
-function check_requirments(){
+function check_requirments() {
     pkgs=("$@")
     for pkg in "${pkgs[@]}"; do
-        check_requirment $pkg
-        if [ $? -ne 0 ]; then
+        if ! check_requirment "$pkg"; then
             return 1
         fi
     done
 }
 
 # $1 = package name
-# $2 = install command
+# "$2" = install command
 function install_pkg() {
-    check_requirment $1
-
-    # Already installed
-    if [ $? == 0 ]; then
+    if check_requirment "$1"; then
         gecho "[ $1 ] is already installed."
         return 0
     fi
 
     pkg_to_install=${2:-$1}
     gecho "[ $1 ] is not installed. Installing..."
-    $INSTALL_CMD $pkg_to_install > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    $INSTALL_CMD "$pkg_to_install" >/dev/null 2>&1
+    if ! $INSTALL_CMD "$pkg_to_install" >/dev/null 2>&1; then
         gecho "Failed to install [ $1 ]"
         return 1
     fi
@@ -281,19 +257,19 @@ function install_pkg() {
     sleep 0.3
 }
 
-function install_pkgs(){
+function install_pkgs() {
     for pkg in "${pkgs[@]}"; do
-        install_pkg $pkg
+        install_pkg "$pkg"
     done
 }
 
-function install_pkg_silent(){
-    install_pkg $1 > /dev/null 2>&1
+function install_pkg_silent() {
+    install_pkg "$1" >/dev/null 2>&1
 }
 
-function install_pkgs_silent(){
+function install_pkgs_silent() {
     for pkg in "${pkgs[@]}"; do
-        install_pkg_silent $pkg
+        install_pkg_silent "$pkg"
     done
 }
 
@@ -314,27 +290,50 @@ cat <<'EOF'
 EOF
 line
 
+gecho "Welcome to the Andromeda Installer! Running pre-ansible configurations and installations."
+
+# clone dots
+ensure_repo
+
+############################
+## Nix Installer
+############################
+section_start "$NIX"
+if ! dir_exist "/nix"; then
+    double_gecho "[ nix ] is not installed. Downloading and installing..."
+    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
+else
+    gecho "[ nix ] is already installed."
+fi
+
+# Check if nix.conf is configured
+if ! dir_exist "$HOME/.config/nix"; then
+    gecho "Directory doesn't exist. Creating and Configuring nix.conf with experimental features enabled..."
+
+    mkdir -p ~/.config/nix
+    echo "experimental-features = nix-command flakes" >"$HOME/.config/nix/nix.conf"
+else
+    if ! grep -q "experimental-features =" "$HOME/.config/nix/nix.conf"; then
+        gecho "Configuring nix.conf with experimental features enabled..."
+        echo "experimental-features = nix-command" >>"$HOME/.config/nix/nix.conf"
+    else
+        gecho "nix.conf is already configured."
+    fi
+fi
+section_end
+
 ############################
 ## Dependencies
 ############################
-pkgs=("base-devel" "gum" "fastfetch")
-install_pkgs_silent pkgs="${pkgs[@]}"
-
-# Clone paru and setup if not already
-if ! command -v paru &> /dev/null
-then
-    gecho "Paru not found. Installing..."
-    git clone https://aur.archlinux.org/paru.git
-    cd paru
-    makepkg -si
-fi
-
-fastfetch
-line
+# nix-shell -p gum fastfetch
+nix profile install nixpkgs#gum nixpkgs#fastfetch
 
 ############################
 ## Main Section
 ############################
+
+fastfetch
+line
 
 # Skip installer if -s flag is passed
 if [ -n "$SKIP_INSTALL" ]; then
@@ -344,16 +343,13 @@ fi
 
 # If ansible is already installed, ask if they just want to run the playbook
 if check_requirment ansible; then
-    confirm "Ansible is already installed. Run playbook [ $BLUE$PLAYBOOK$RESET ] with tags [ $BLUE$TAGS$RESET ]? (Y/n)"
-    if [ $? -eq 0 ]; then
+    if confirm "Ansible is already installed. Run playbook [ $BLUE$PLAYBOOK$RESET ] with tags [ $BLUE$TAGS$RESET ]? (Y/n)"; then
         run_playbook
         exit 0
-    else
-        line
     fi
 fi
 
-cat << 'EOF'
+cat <<'EOF'
 This script performs the following actions:
 -> Installs required packages [gum fastfetch nix ansible]
 -> Installs ansible-galaxy and ansible-galaxy packages
@@ -361,25 +357,9 @@ This script performs the following actions:
 EOF
 line
 
-confirm "Run installer? (Y/n)"
-if [ $? -ne 0 ]; then
-   exit 0
+if ! confirm "Run installer? (Y/n)"; then
+    exit 0
 fi
-
-############################
-## Nix Installer
-############################
-section_start "$NIX"
-dir_exist "/nix"
-if [ $? -ne 0 ]; then
-    msg="[ nix ] is not installed. Downloading and installing..."
-    double_gecho "$msg"
-    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm
-    sleep 0.3
-else
-    gecho "[ nix ] is already installed."
-fi
-section_end
 
 ############################
 ## Ansible Installer
@@ -394,7 +374,7 @@ section_end
 ############################
 section_start "$GALAXY"
 gecho "Installing ansible-galaxy requirements..."
-ansible-galaxy collection install -Uir requirements.yml
+ansible-galaxy collection install -Uir "$DOTFILE_HOME/requirements.yml"
 section_end
 
 ############################
@@ -402,11 +382,11 @@ section_end
 ############################
 section_start "$ANSIBLEPLAYBOOK"
 header="Select a playbook to run"
-PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" $(echo "${AVAILABLE_PLAYBOOKS[@]}"))
+PLAYBOOK=$(gum choose --item.foreground 250 --header="$header" "${AVAILABLE_PLAYBOOKS[@]}")
 gecho "$header: $BLUE$PLAYBOOK$RESET"
 
 header="Select a tag to run"
-TAGS=$(gum choose --item.foreground 250 --header="$header" $(echo "${AVAILABLE_TAGS[@]}"))
+TAGS=$(gum choose --item.foreground 250 --header="$header" "${AVAILABLE_TAGS[@]}")
 gecho "$header: $BLUE$TAGS$RESET"
 
 # LIFT OFF

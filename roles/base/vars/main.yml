@@ -7,7 +7,6 @@ base_packages:
     - alacritty
     - cmake
     - curl
-    - expac
     - git
     - htop
     - make
@@ -21,16 +20,9 @@ base_packages:
     - unzip
     - vifm
     - wget
-    - zellij
     - zip
     - zoxide
     - zsh
-
-  ############################
-  # Packages for Ubuntu
-  ############################
-  apt:
-    - build-essential
 
   ##########################
   # Packages for Archlinux
@@ -47,3 +39,19 @@ base_packages:
     - linux-headers
     - linux-firmware
     - github-cli
+
+  ############################
+  # Packages for Ubuntu
+  ############################
+  apt:
+    - build-essential
+
+  ############################
+  # Packages for RedHat
+  ############################
+  copr:
+    - solopasha/hyprland
+    - alebastr/sway-extras
+    - en4aew/desktop-tools
+    - trs-sod/swaylock-effects
+    - erikreider/SwayNotificationCenter

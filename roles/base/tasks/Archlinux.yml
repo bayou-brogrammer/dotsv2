@@ -1,14 +1,14 @@
 ---
 - name: Archlinux | Update/Upgrade pacman
   become: true
-  when: update_system or not skip_setup
+  when: update_system
   community.general.pacman:
     upgrade: true
     update_cache: true
 
 - name: Archlinux | Upgrade the system using paru
   become: true
-  when: update_system or not skip_setup
+  when: update_system
   kewlfft.aur.aur:
     use: paru
     upgrade: true

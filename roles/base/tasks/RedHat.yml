@@ -1,0 +1,20 @@
+---
+- name: RedHat | Auto remove packages
+  become: true
+  ansible.builtin.dnf:
+    autoremove: true
+
+- name: RedHat | Update/Upgrade DNF
+  become: true
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    update_cache: true
+
+- name: RedHat | Enable COPR repositories
+  become: true
+  community.general.copr:
+    state: enabled
+    name: "{{ item }}"
+    host: copr.fedorainfracloud.org
+  loop: "{{ base_packages.copr }}"
